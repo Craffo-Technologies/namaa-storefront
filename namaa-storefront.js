@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.3.9";
+  var VERSION = "0.3.10";
   var DEFAULT_APP_ID = 616179871;
   var STYLE_ID = "namaa-widget-styles";
   var pendingAction = null;
@@ -147,6 +147,9 @@
       ".namaa-account__cancel:focus-visible { outline: 3px solid color-mix(in srgb, var(--namaa-primary) 30%, transparent); outline-offset: 2px; }",
       ".namaa-account__cancel[data-confirm='1'] { border-color: #b42318; background: #b42318; color: #fff; }",
       ".namaa-account__cancel:disabled { opacity: .65; cursor: wait; }",
+      ".namaa-account__orders { display: grid; gap: 6px; margin-top: 12px; padding-top: 10px; border-top: 1px solid #ece9f1; }",
+      ".namaa-account__order { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; color: #706b7a; font-size: 12px; line-height: 1.6; }",
+      ".namaa-account__order strong { color: var(--namaa-text); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }",
       "@media (max-width: 520px) { .namaa-account { padding: 18px; border-radius: 14px; } .namaa-account__row { align-items: stretch; flex-direction: column; gap: 14px; } .namaa-account__cancel { width: 100%; } }",
       ".namaa-cart-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 10px; border-radius: 999px; background: var(--namaa-bg); color: var(--namaa-primary); border: 1px solid var(--namaa-border); font-family: var(--namaa-font); font-size: 12px; font-weight: 700; line-height: 1.4; }",
       ".namaa-modal { position: fixed; inset: 0; z-index: 99999; display: none; }",
@@ -1902,10 +1905,10 @@
       amount = document.createElement("span");
       status = document.createElement("span");
       button = document.createElement("button");
-      title.textContent = "كل شهر";
+      title.textContent = "الباقة الشهرية ( اشتراك )";
       meta.className = "namaa-account__meta";
       amount.className = "namaa-account__amount";
-      amount.textContent = "65.00 ر.س";
+      amount.textContent = "كل شهر · 65.00 ر.س";
       status.className = "namaa-account__status";
       status.setAttribute("data-status", "active");
       status.textContent = "نشط";
@@ -1913,6 +1916,10 @@
       meta.appendChild(amount);
       meta.appendChild(status);
       copy.appendChild(meta);
+      appendAccountOrders(copy, [
+        { id: "1001", ordered_on: "28 سبتمبر 2026", kind_label: "أول طلب", amount_label: "65.00 ر.س" },
+        { id: "1002", ordered_on: "28 أكتوبر 2026", kind_label: "تجديد", amount_label: "65.00 ر.س" },
+      ]);
       button.type = "button";
       button.className = "namaa-account__cancel";
       button.textContent = "إلغاء الاشتراك";
@@ -2088,6 +2095,36 @@
       });
   }
 
+  function appendAccountOrders(parent, orders) {
+    var list = document.createElement("div");
+    var i;
+    var order;
+    var line;
+    var number;
+    var detail;
+
+    if (!orders || !orders.length) {
+      return;
+    }
+
+    list.className = "namaa-account__orders";
+
+    for (i = 0; i < orders.length; i += 1) {
+      order = orders[i];
+      line = document.createElement("div");
+      number = document.createElement("strong");
+      detail = document.createElement("span");
+      line.className = "namaa-account__order";
+      number.textContent = "#" + (order.id || "");
+      detail.textContent = [order.ordered_on, order.kind_label, order.amount_label].filter(Boolean).join(" · ");
+      line.appendChild(number);
+      line.appendChild(detail);
+      list.appendChild(line);
+    }
+
+    parent.appendChild(list);
+  }
+
   function accountRow(item, storeId, token) {
     var row = document.createElement("div");
     var copy = document.createElement("div");
@@ -2096,12 +2133,22 @@
     var amount = document.createElement("span");
     var status = document.createElement("span");
     var button = document.createElement("button");
+    var summary = [];
 
     row.className = "namaa-account__row";
-    title.textContent = item.interval_label || "اشتراك";
+    title.textContent = item.product_name || item.interval_label || "اشتراك";
     meta.className = "namaa-account__meta";
     amount.className = "namaa-account__amount";
-    amount.textContent = item.amount_label || "";
+
+    if (item.interval_label && item.product_name) {
+      summary.push(item.interval_label);
+    }
+
+    if (item.amount_label) {
+      summary.push(item.amount_label);
+    }
+
+    amount.textContent = summary.join(" · ");
     status.className = "namaa-account__status";
     status.setAttribute("data-status", item.status || "active");
     status.textContent = accountStatusLabel(item.status);
@@ -2109,6 +2156,7 @@
     meta.appendChild(amount);
     meta.appendChild(status);
     copy.appendChild(meta);
+    appendAccountOrders(copy, item.orders || []);
     row.appendChild(copy);
 
     if (!item.cancellable) {
