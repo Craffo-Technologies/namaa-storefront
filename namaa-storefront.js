@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.3.8";
+  var VERSION = "0.3.9";
   var DEFAULT_APP_ID = 616179871;
   var STYLE_ID = "namaa-widget-styles";
   var pendingAction = null;
@@ -92,7 +92,7 @@
     }
 
     el.textContent = [
-      ".namaa-widget, .namaa-banner, .namaa-cart-badge, .namaa-modal { --namaa-primary: var(--color-primary, var(--theme-primary-color, #111111)); --namaa-primary-dark: var(--color-primary-dark, var(--namaa-primary)); --namaa-on-primary: " +
+      ".namaa-widget, .namaa-banner, .namaa-cart-badge, .namaa-modal, .namaa-account { --namaa-primary: var(--color-primary, var(--theme-primary-color, #111111)); --namaa-primary-dark: var(--color-primary-dark, var(--namaa-primary)); --namaa-on-primary: " +
         onPrimary +
         "; --namaa-text: var(--main-text-color, inherit); --namaa-muted: var(--color-text, #6b7280); --namaa-bg: var(--color-grey, #f5f7f9); --namaa-border: var(--color-light-grey, #eeeeee); --namaa-radius: var(--s-radius, 12px); --namaa-font: var(--font-main, inherit); }",
       "html.namaa-active[data-namaa-product] salla-add-product-button[type='submit'], html.namaa-active[data-namaa-product] salla-add-product-button[data-testid='store-product-add-to-cart'] { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }",
@@ -130,14 +130,24 @@
       ".namaa-banner strong { display: block; color: var(--namaa-primary); margin-bottom: 4px; }",
       ".namaa-banner p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--namaa-muted); }",
       ".namaa-banner button { background: none; border: 0; padding: 0; font: inherit; color: var(--namaa-primary); font-weight: 700; cursor: pointer; text-decoration: underline; }",
-      ".namaa-account { margin: 0 0 20px; padding: 16px; border: 1px solid var(--namaa-border); border-radius: var(--namaa-radius); background: #fff; direction: rtl; text-align: right; font-family: var(--namaa-font); color: var(--namaa-text); }",
-      ".namaa-account h2 { margin: 0 0 6px; font-size: 18px; font-weight: 800; }",
-      ".namaa-account p { margin: 0 0 12px; font-size: 13px; line-height: 1.7; color: var(--namaa-muted); }",
-      ".namaa-account__row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--namaa-border); }",
-      ".namaa-account__row strong { display: block; }",
-      ".namaa-account__row span { color: var(--namaa-muted); font-size: 13px; }",
-      ".namaa-account__cancel { appearance: none; border: 1px solid var(--namaa-border); background: #fff; border-radius: var(--namaa-radius); padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }",
+      ".namaa-account { position: relative; overflow: hidden; width: 100%; max-width: 760px; margin: 0 0 24px; padding: 22px; border: 1px solid #e8e5ef; border-radius: 16px; background: #fff; box-shadow: 0 10px 30px rgba(21,4,67,.07); direction: rtl; text-align: right; font-family: var(--namaa-font); color: var(--namaa-text); box-sizing: border-box; }",
+      ".namaa-account::before { content: ''; position: absolute; inset: 0 0 auto; height: 4px; background: var(--namaa-primary); }",
+      ".namaa-account h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 5px; font-size: 19px; line-height: 1.5; font-weight: 800; color: var(--namaa-text); }",
+      ".namaa-account h2::before { content: ''; width: 10px; height: 10px; flex: 0 0 10px; border-radius: 50%; background: var(--namaa-primary); box-shadow: 0 0 0 5px color-mix(in srgb, var(--namaa-primary) 12%, transparent); }",
+      ".namaa-account > p { margin: 0 0 18px; max-width: 620px; font-size: 13px; line-height: 1.8; color: #706b7a; }",
+      ".namaa-account__row { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 16px; border: 1px solid #ece9f1; border-radius: 13px; background: #fbfafd; }",
+      ".namaa-account__row + .namaa-account__row { margin-top: 10px; }",
+      ".namaa-account__row strong { display: block; margin-bottom: 7px; font-size: 15px; font-weight: 800; color: var(--namaa-text); }",
+      ".namaa-account__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }",
+      ".namaa-account__amount { color: #706b7a; font-size: 13px; font-variant-numeric: tabular-nums; }",
+      ".namaa-account__status { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border-radius: 999px; background: #ecfdf3; color: #18794e; font-size: 12px; font-weight: 700; }",
+      ".namaa-account__status[data-status='cancelled'], .namaa-account__status[data-status='past_due'] { background: #fff1f2; color: #b42318; }",
+      ".namaa-account__cancel { appearance: none; min-height: 44px; flex: 0 0 auto; border: 1px solid #f1c7ca; background: #fff7f7; color: #b42318; border-radius: 10px; padding: 9px 14px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; transition: background-color .18s ease, border-color .18s ease, color .18s ease; }",
+      ".namaa-account__cancel:hover { border-color: #dc7c83; background: #fff0f1; }",
+      ".namaa-account__cancel:focus-visible { outline: 3px solid color-mix(in srgb, var(--namaa-primary) 30%, transparent); outline-offset: 2px; }",
+      ".namaa-account__cancel[data-confirm='1'] { border-color: #b42318; background: #b42318; color: #fff; }",
       ".namaa-account__cancel:disabled { opacity: .65; cursor: wait; }",
+      "@media (max-width: 520px) { .namaa-account { padding: 18px; border-radius: 14px; } .namaa-account__row { align-items: stretch; flex-direction: column; gap: 14px; } .namaa-account__cancel { width: 100%; } }",
       ".namaa-cart-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 10px; border-radius: 999px; background: var(--namaa-bg); color: var(--namaa-primary); border: 1px solid var(--namaa-border); font-family: var(--namaa-font); font-size: 12px; font-weight: 700; line-height: 1.4; }",
       ".namaa-modal { position: fixed; inset: 0; z-index: 99999; display: none; }",
       ".namaa-modal.is-open { display: flex; align-items: flex-end; justify-content: center; }",
@@ -1848,15 +1858,14 @@
     bindProductFormWatch();
     bindCartPageWatch();
     fetchStorefrontConfig(storeId, currentProductId());
-    mountAccountTest();
     renderAccountSubscriptions(storeId);
   }
 
   // TEMP_ACCOUNT_TEST — delete later. Sample card so an account with no subscription can see the block.
-  function mountAccountTest() {
+  function mountAccountTest(storeId) {
     var attempts = 0;
 
-    if (!isAccountPage() || document.getElementById("namaa-account-test")) {
+    if (String(storeId) !== "427664796" || !isAccountPage() || document.getElementById("namaa-account-test")) {
       return;
     }
 
@@ -1867,6 +1876,8 @@
       var copy;
       var title;
       var meta;
+      var amount;
+      var status;
       var button;
 
       attempts += 1;
@@ -1887,15 +1898,25 @@
       row.className = "namaa-account__row";
       copy = document.createElement("div");
       title = document.createElement("strong");
-      meta = document.createElement("span");
+      meta = document.createElement("div");
+      amount = document.createElement("span");
+      status = document.createElement("span");
       button = document.createElement("button");
       title.textContent = "كل شهر";
-      meta.textContent = "65.00 ر.س · نشط";
+      meta.className = "namaa-account__meta";
+      amount.className = "namaa-account__amount";
+      amount.textContent = "65.00 ر.س";
+      status.className = "namaa-account__status";
+      status.setAttribute("data-status", "active");
+      status.textContent = "نشط";
       copy.appendChild(title);
+      meta.appendChild(amount);
+      meta.appendChild(status);
       copy.appendChild(meta);
       button.type = "button";
       button.className = "namaa-account__cancel";
       button.textContent = "إلغاء الاشتراك";
+      button.setAttribute("aria-label", "إلغاء الاشتراك الشهري");
       button.addEventListener("click", function () {
         if (button.getAttribute("data-confirm") !== "1") {
           button.setAttribute("data-confirm", "1");
@@ -1903,7 +1924,8 @@
           return;
         }
 
-        meta.textContent = "65.00 ر.س · ملغى";
+        status.setAttribute("data-status", "cancelled");
+        status.textContent = "ملغى";
         button.remove();
       });
       row.appendChild(copy);
@@ -1994,6 +2016,7 @@
 
   function mountAccount(node) {
     var existing = document.getElementById("namaa-account");
+    var heading = accountHeading();
     var host = document.querySelector("main") || document.querySelector(".main-content") || document.body;
 
     if (existing) {
@@ -2003,7 +2026,9 @@
     node.id = "namaa-account";
     node.className = "namaa-account";
 
-    if (host.firstChild) {
+    if (heading && heading.parentNode) {
+      heading.parentNode.insertBefore(node, heading);
+    } else if (host.firstChild) {
       host.insertBefore(node, host.firstChild);
     } else {
       host.appendChild(node);
@@ -2046,6 +2071,7 @@
         var items = (payload && payload.subscriptions) || [];
 
         if (!items.length) {
+          mountAccountTest(storeId);
           return;
         }
 
@@ -2058,6 +2084,7 @@
       })
       .catch(function (error) {
         console.warn("[Namaa] account subscriptions failed", error);
+        mountAccountTest(storeId);
       });
   }
 
@@ -2065,13 +2092,22 @@
     var row = document.createElement("div");
     var copy = document.createElement("div");
     var title = document.createElement("strong");
-    var meta = document.createElement("span");
+    var meta = document.createElement("div");
+    var amount = document.createElement("span");
+    var status = document.createElement("span");
     var button = document.createElement("button");
 
     row.className = "namaa-account__row";
     title.textContent = item.interval_label || "اشتراك";
-    meta.textContent = (item.amount_label || "") + " · " + accountStatusLabel(item.status);
+    meta.className = "namaa-account__meta";
+    amount.className = "namaa-account__amount";
+    amount.textContent = item.amount_label || "";
+    status.className = "namaa-account__status";
+    status.setAttribute("data-status", item.status || "active");
+    status.textContent = accountStatusLabel(item.status);
     copy.appendChild(title);
+    meta.appendChild(amount);
+    meta.appendChild(status);
     copy.appendChild(meta);
     row.appendChild(copy);
 
@@ -2082,6 +2118,7 @@
     button.type = "button";
     button.className = "namaa-account__cancel";
     button.textContent = "إلغاء الاشتراك";
+    button.setAttribute("aria-label", "إلغاء " + (item.interval_label || "الاشتراك"));
     button.addEventListener("click", function () {
       if (button.getAttribute("data-confirm") !== "1") {
         button.setAttribute("data-confirm", "1");
@@ -2104,7 +2141,8 @@
             throw new Error("cancel failed");
           }
 
-          meta.textContent = (item.amount_label || "") + " · ملغى";
+          status.setAttribute("data-status", "cancelled");
+          status.textContent = "ملغى";
           button.remove();
         })
         .catch(function () {
