@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.3.12";
+  var VERSION = "0.3.13";
   var DEFAULT_APP_ID = 616179871;
   var STYLE_ID = "namaa-widget-styles";
   var pendingAction = null;
@@ -117,6 +117,7 @@
       ".namaa-save { display: inline-flex; align-items: center; width: fit-content; max-width: 100%; background: var(--namaa-bg); border-radius: 999px; padding-block: 3px; padding-inline: 8px; font-size: 12px; line-height: 1.3; color: var(--namaa-primary); }",
       ".namaa-save__pct { font-weight: 800; }",
       ".namaa-save__amt { font-weight: 600; color: var(--namaa-muted); margin-inline-start: 8px; padding-inline-start: 8px; border-inline-start: 1px solid var(--namaa-border); }",
+      ".namaa-ship { display: inline-flex; width: fit-content; background: var(--namaa-bg); border-radius: 999px; padding: 3px 8px; font-size: 12px; font-weight: 800; color: var(--namaa-primary); }",
       ".namaa-sub-extra { margin: 8px 0 0; }",
       ".namaa-chips { display: flex; flex-wrap: wrap; gap: 8px; }",
       ".namaa-chip { appearance: none; border: 1px solid var(--namaa-border); background: #fff; border-radius: 999px; padding: 8px 12px; cursor: pointer; font: inherit; font-size: 13px; color: inherit; }",
@@ -454,6 +455,14 @@
     }
 
     return '<span class="namaa-save"><span class="namaa-save__pct">وفر ' + formatMoney(saved) + "</span></span>";
+  }
+
+  function shippingLine(offer) {
+    if (!offer || !offer.free_shipping) {
+      return "";
+    }
+
+    return '<span class="namaa-ship">شحن مجاني</span>';
   }
 
   function setOn(target, key, value) {
@@ -930,13 +939,13 @@
 
     widgetState.pendingCoupon = null;
 
-    if (!offer || !(Number(offer.discount_percent) > 0)) {
+    if (!offer || (!(Number(offer.discount_percent) > 0) && !offer.free_shipping)) {
       return Promise.resolve(null);
     }
 
     return issueCheckoutCoupon(storeId, productId, offer.key).then(function (coupon) {
       if (!coupon || !coupon.coupon_code) {
-        return Promise.reject(new Error("تعذر تطبيق الخصم"));
+        return Promise.reject(new Error(Number(offer.discount_percent) > 0 ? "تعذر تطبيق الخصم" : "تعذر تطبيق الشحن المجاني"));
       }
 
       widgetState.pendingCoupon = coupon;
@@ -1170,7 +1179,7 @@
         choiceButton({
           selected: subscribeSelected,
           label: config.offers.length === 1 ? "اشتراك · " + (offer.label || "اشتراك دوري") : "اشتراك دوري",
-          saveHtml: savingsLine(offer, listPrice),
+          saveHtml: savingsLine(offer, listPrice) + shippingLine(offer),
           priceHtml: moneyStack(subPrice, listPrice),
           onClick: function () {
             widgetState.buyMode = "subscribe";
