@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.3.11";
+  var VERSION = "0.3.12";
   var DEFAULT_APP_ID = 616179871;
   var STYLE_ID = "namaa-widget-styles";
   var pendingAction = null;
@@ -1861,45 +1861,6 @@
     renderAccountSubscriptions(storeId);
   }
 
-  // TEMP_ACCOUNT_TEST — delete later. Sample card so an account with no subscription can see the block.
-  function mountAccountTest(storeId) {
-    var attempts = 0;
-
-    if (String(storeId) !== "427664796" || !isAccountPage() || document.getElementById("namaa-account-test")) {
-      return;
-    }
-
-    function place() {
-      var heading = accountHeading();
-      var root;
-
-      attempts += 1;
-
-      if (!heading) {
-        if (attempts < 20) {
-          window.setTimeout(place, 300);
-        }
-        return;
-      }
-
-      root = document.createElement("section");
-      root.id = "namaa-account-test";
-      root.className = "namaa-account";
-      root.appendChild(document.createElement("h2")).textContent = "اشتراكاتك";
-      root.appendChild(accountRow({
-        product_name: "الباقة الشهرية ( اشتراك )",
-        interval_label: "كل شهر",
-        amount_label: "65.00 ر.س",
-        status: "active",
-        cancellable: true,
-        preview: true,
-      }, storeId, ""));
-      heading.parentNode.insertBefore(root, heading);
-    }
-
-    place();
-  }
-
   function accountHeading() {
     var nodes = document.querySelectorAll("h1, h2, h3");
     var i;
@@ -2034,7 +1995,6 @@
         var items = (payload && payload.subscriptions) || [];
 
         if (!items.length) {
-          mountAccountTest(storeId);
           return;
         }
 
@@ -2046,7 +2006,6 @@
       })
       .catch(function (error) {
         console.warn("[Namaa] account subscriptions failed", error);
-        mountAccountTest(storeId);
       });
   }
 
@@ -2122,14 +2081,6 @@
     button.className = "namaa-account__cancel";
     button.textContent = "إلغاء الاشتراك";
     button.setAttribute("aria-label", "إلغاء " + (item.product_name || item.interval_label || "الاشتراك"));
-
-    if (item.preview) {
-      requestAccountCancel(button, copy, function () {
-        finishAccountCancel(status, button, copy);
-      });
-      row.appendChild(button);
-      return row;
-    }
 
     requestAccountCancel(button, copy, function () {
       button.disabled = true;
