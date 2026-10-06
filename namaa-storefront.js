@@ -3,8 +3,6 @@
 
   var VERSION = "0.3.7";
   var DEFAULT_APP_ID = 616179871;
-  // TEMP_HOME_TEST — delete later. Homepage only, after section.art-faq, for product 187680295.
-  var HOME_TEST_PRODUCT_ID = "187680295";
   var STYLE_ID = "namaa-widget-styles";
   var pendingAction = null;
   var interceptBound = false;
@@ -100,8 +98,6 @@
       "html.namaa-active[data-namaa-product] salla-add-product-button[type='submit'], html.namaa-active[data-namaa-product] salla-add-product-button[data-testid='store-product-add-to-cart'] { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }",
       "html.namaa-active[data-namaa-product] salla-installment { display:none !important; }",
       ".namaa-widget { font-family: var(--namaa-font); color: var(--namaa-text); margin: 12px 0 16px; direction: rtl; text-align: right; }",
-      ".namaa-widget--home { max-width: 720px; margin: 32px auto; padding: 20px; border: 1px solid var(--namaa-border); border-radius: var(--namaa-radius); background: #fff; }",
-      ".namaa-home-test__name { margin: 0 0 14px; font-size: 22px; font-weight: 800; line-height: 1.4; }",
       ".namaa-widget * { box-sizing: border-box; }",
       ".namaa-choices { display: grid; gap: 8px; }",
       ".namaa-choice { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; width: 100%; border: 1px solid var(--namaa-border); background: #fff; border-radius: var(--namaa-radius); padding: 12px 14px; cursor: pointer; text-align: right; font: inherit; color: inherit; }",
@@ -1111,23 +1107,13 @@
       existing.parentNode.removeChild(existing);
     }
 
-    if (!widgetState.homeTest) {
-      hideNativeAtc(widgetState.productId);
-    }
+    hideNativeAtc(widgetState.productId);
     injectStyles();
 
     root = document.createElement("div");
     root.id = "namaa-widget-container";
-    root.className = "namaa-widget namaa-widget-container" + (widgetState.homeTest ? " namaa-widget--home" : "");
-    root.innerHTML =
-      (widgetState.homeTest ? '<p class="namaa-home-test__name"></p>' : "") +
-      '<div class="namaa-choices"></div><div class="namaa-sub-extra"></div><div class="namaa-actions"></div>';
-    if (widgetState.homeTest) {
-      var homeName = root.querySelector(".namaa-home-test__name");
-      if (homeName) {
-        homeName.textContent = (config.product && config.product.name) || "";
-      }
-    }
+    root.className = "namaa-widget namaa-widget-container";
+    root.innerHTML = '<div class="namaa-choices"></div><div class="namaa-sub-extra"></div><div class="namaa-actions"></div>';
 
     widgetState.buyMode = widgetState.buyMode || "subscribe";
     if (!widgetState.selectedOffer) {
@@ -1245,15 +1231,6 @@
 
     paint();
     widgetState.paint = paint;
-
-    if (widgetState.homeTest) {
-      if (!mountHomeTest(root)) {
-        return;
-      }
-      bindCartIntercept();
-      return;
-    }
-
     requestLivePrice();
 
     if (!mountAfterAnchor(root)) {
@@ -1264,46 +1241,6 @@
     bindProductFormWatch();
   }
 
-  function isHomeTestPage() {
-    var page = String(configGet("page.type") || configGet("page.slug") || "").toLowerCase();
-    var path = window.location.pathname || "/";
-
-    if (page.indexOf("product") !== -1 || /\/p\d+/.test(path)) {
-      return false;
-    }
-
-    return path === "/" || path === "" || page === "index" || page === "home" || page === "landing";
-  }
-
-  function mountHomeTest(node) {
-    var anchor = document.querySelector("section.art-faq");
-
-    if (!anchor) {
-      return false;
-    }
-
-    anchor.insertAdjacentElement("afterend", node);
-    return true;
-  }
-
-  function mountHomeTestWhenReady(attempt) {
-    attempt = attempt || 0;
-
-    if (document.querySelector("section.art-faq")) {
-      renderProductWidget(true);
-      return;
-    }
-
-    if (attempt > 40) {
-      console.info("[Namaa] homepage test: section.art-faq was not found");
-      return;
-    }
-
-    window.setTimeout(function () {
-      mountHomeTestWhenReady(attempt + 1);
-    }, 250);
-  }
-
   function decorateOffer(offer, listPrice) {
     var copy = offer ? Object.assign({}, offer) : {};
     copy.resolvedPrice = offerPrice(copy, listPrice);
@@ -1311,7 +1248,7 @@
   }
 
   function addWithAction(action, button) {
-    var productId = widgetState.homeTest ? widgetState.productId : currentProductId() || widgetState.productId;
+    var productId = currentProductId() || widgetState.productId;
     var offer = action === "subscribe" ? widgetState.selectedOffer : null;
 
     if (!productId) {
@@ -1322,14 +1259,14 @@
     pendingAction = action;
     button.disabled = true;
 
-    (widgetState.homeTest ? Promise.resolve(true) : validateProductOptions())
+    validateProductOptions()
       .then(function () {
         return prepareCheckoutCoupon(offer);
       })
       .then(function () {
         var waiting;
 
-        if (!widgetState.homeTest && productForm()) {
+        if (productForm()) {
           waiting = waitForCartAdd(productId);
           if (submitNativeProductForm()) {
             return waiting.then(function (response) {
@@ -1342,11 +1279,7 @@
           cancelPendingAddWait();
         }
 
-        var fields = widgetState.homeTest
-          ? Promise.resolve({ quantity: 1, notes: "", donation_amount: 0, options: null })
-          : collectCartFields();
-
-        return fields.then(function (cartFields) {
+        return collectCartFields().then(function (cartFields) {
           return nativeAddItem(productId, offer, cartFields);
         });
       })
@@ -1872,11 +1805,7 @@
           currency: currentCurrencyCode(),
         });
 
-        if (isHomeTestPage()) {
-          widgetState.homeTest = true;
-          mountHomeTestWhenReady();
-        } else if (isProductPage()) {
-          widgetState.homeTest = false;
+        if (isProductPage()) {
           renderProductWidget();
         }
 
@@ -1910,7 +1839,7 @@
     bindCurrencyWatch();
     bindProductFormWatch();
     bindCartPageWatch();
-    fetchStorefrontConfig(storeId, isHomeTestPage() ? HOME_TEST_PRODUCT_ID : currentProductId());
+    fetchStorefrontConfig(storeId, currentProductId());
   }
 
   function bindProductFormWatch() {
