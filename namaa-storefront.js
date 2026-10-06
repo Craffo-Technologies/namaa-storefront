@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  var VERSION = "0.3.7";
+  var VERSION = "0.3.8";
   var DEFAULT_APP_ID = 616179871;
   var STYLE_ID = "namaa-widget-styles";
   var pendingAction = null;
@@ -130,6 +130,14 @@
       ".namaa-banner strong { display: block; color: var(--namaa-primary); margin-bottom: 4px; }",
       ".namaa-banner p { margin: 0; font-size: 13px; line-height: 1.7; color: var(--namaa-muted); }",
       ".namaa-banner button { background: none; border: 0; padding: 0; font: inherit; color: var(--namaa-primary); font-weight: 700; cursor: pointer; text-decoration: underline; }",
+      ".namaa-account { margin: 0 0 20px; padding: 16px; border: 1px solid var(--namaa-border); border-radius: var(--namaa-radius); background: #fff; direction: rtl; text-align: right; font-family: var(--namaa-font); color: var(--namaa-text); }",
+      ".namaa-account h2 { margin: 0 0 6px; font-size: 18px; font-weight: 800; }",
+      ".namaa-account p { margin: 0 0 12px; font-size: 13px; line-height: 1.7; color: var(--namaa-muted); }",
+      ".namaa-account__row { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--namaa-border); }",
+      ".namaa-account__row strong { display: block; }",
+      ".namaa-account__row span { color: var(--namaa-muted); font-size: 13px; }",
+      ".namaa-account__cancel { appearance: none; border: 1px solid var(--namaa-border); background: #fff; border-radius: var(--namaa-radius); padding: 8px 12px; font: inherit; font-weight: 700; cursor: pointer; }",
+      ".namaa-account__cancel:disabled { opacity: .65; cursor: wait; }",
       ".namaa-cart-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 10px; border-radius: 999px; background: var(--namaa-bg); color: var(--namaa-primary); border: 1px solid var(--namaa-border); font-family: var(--namaa-font); font-size: 12px; font-weight: 700; line-height: 1.4; }",
       ".namaa-modal { position: fixed; inset: 0; z-index: 99999; display: none; }",
       ".namaa-modal.is-open { display: flex; align-items: flex-end; justify-content: center; }",
@@ -1840,6 +1848,175 @@
     bindProductFormWatch();
     bindCartPageWatch();
     fetchStorefrontConfig(storeId, currentProductId());
+    renderAccountSubscriptions(storeId);
+  }
+
+  function isAccountPage() {
+    var path = window.location.pathname || "";
+    var page = String(configGet("page.type") || configGet("page.slug") || configGet("page.id") || "").toLowerCase();
+
+    if (/\/profile\/?$/.test(path) || /\/orders\/?$/.test(path)) {
+      return true;
+    }
+
+    return page === "profile" || page === "customer.profile" || page === "orders" || page === "customer.orders";
+  }
+
+  function customerAccessToken() {
+    var stored = null;
+
+    try {
+      if (window.salla && window.salla.storage && typeof window.salla.storage.get === "function") {
+        stored = window.salla.storage.get("token");
+      }
+    } catch (error) {}
+
+    if (!stored) {
+      return "";
+    }
+
+    if (typeof stored === "string") {
+      return stored;
+    }
+
+    return String(stored.token || stored.access_token || "");
+  }
+
+  function accountStatusLabel(status) {
+    if (status === "cancelled") {
+      return "ملغى";
+    }
+
+    if (status === "past_due") {
+      return "تعذّر التجديد";
+    }
+
+    return "نشط";
+  }
+
+  function mountAccount(node) {
+    var existing = document.getElementById("namaa-account");
+    var host = document.querySelector("main") || document.querySelector(".main-content") || document.body;
+
+    if (existing) {
+      existing.remove();
+    }
+
+    node.id = "namaa-account";
+    node.className = "namaa-account";
+
+    if (host.firstChild) {
+      host.insertBefore(node, host.firstChild);
+    } else {
+      host.appendChild(node);
+    }
+  }
+
+  function renderAccountSubscriptions(storeId) {
+    var token;
+    var root;
+
+    if (!isAccountPage() || !storeId) {
+      return;
+    }
+
+    token = customerAccessToken();
+    root = document.createElement("section");
+
+    if (!token) {
+      root.appendChild(document.createElement("h2")).textContent = "اشتراكاتك";
+      root.appendChild(document.createElement("p")).textContent = "سجّل الدخول لإلغاء الاشتراك";
+      mountAccount(root);
+      return;
+    }
+
+    fetch(apiBase() + "/api/storefront/subscriptions?store_id=" + encodeURIComponent(storeId) + "&t=" + Date.now(), {
+      headers: {
+        Accept: "application/json",
+        "X-Salla-Customer-Token": token,
+      },
+      cache: "no-store",
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("account subscriptions failed");
+        }
+
+        return response.json();
+      })
+      .then(function (payload) {
+        var items = (payload && payload.subscriptions) || [];
+
+        if (!items.length) {
+          return;
+        }
+
+        root.appendChild(document.createElement("h2")).textContent = "اشتراكاتك";
+        root.appendChild(document.createElement("p")).textContent = "الإلغاء يوقف التجديد القادم. الطلب المدفوع يبقى. لا يمكن التراجع.";
+        items.forEach(function (item) {
+          root.appendChild(accountRow(item, storeId, token));
+        });
+        mountAccount(root);
+      })
+      .catch(function (error) {
+        console.warn("[Namaa] account subscriptions failed", error);
+      });
+  }
+
+  function accountRow(item, storeId, token) {
+    var row = document.createElement("div");
+    var copy = document.createElement("div");
+    var title = document.createElement("strong");
+    var meta = document.createElement("span");
+    var button = document.createElement("button");
+
+    row.className = "namaa-account__row";
+    title.textContent = item.interval_label || "اشتراك";
+    meta.textContent = (item.amount_label || "") + " · " + accountStatusLabel(item.status);
+    copy.appendChild(title);
+    copy.appendChild(meta);
+    row.appendChild(copy);
+
+    if (!item.cancellable) {
+      return row;
+    }
+
+    button.type = "button";
+    button.className = "namaa-account__cancel";
+    button.textContent = "إلغاء الاشتراك";
+    button.addEventListener("click", function () {
+      if (button.getAttribute("data-confirm") !== "1") {
+        button.setAttribute("data-confirm", "1");
+        button.textContent = "تأكيد الإلغاء";
+        return;
+      }
+
+      button.disabled = true;
+      fetch(apiBase() + "/api/storefront/subscriptions/" + encodeURIComponent(item.id) + "/cancel", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-Salla-Customer-Token": token,
+        },
+        body: JSON.stringify({ store_id: String(storeId) }),
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("cancel failed");
+          }
+
+          meta.textContent = (item.amount_label || "") + " · ملغى";
+          button.remove();
+        })
+        .catch(function () {
+          button.disabled = false;
+          button.textContent = "تعذر الإلغاء";
+        });
+    });
+    row.appendChild(button);
+
+    return row;
   }
 
   function bindProductFormWatch() {
