@@ -1849,6 +1849,86 @@
     bindCartPageWatch();
     fetchStorefrontConfig(storeId, currentProductId());
     renderAccountSubscriptions(storeId);
+    mountAccountTest();
+  }
+
+  // TEMP_ACCOUNT_TEST — delete later. Sample card so an account with no subscription can see the block.
+  function mountAccountTest() {
+    var attempts = 0;
+
+    if (!isAccountPage() || document.getElementById("namaa-account-test")) {
+      return;
+    }
+
+    function place() {
+      var heading = accountHeading();
+      var root;
+      var row;
+      var copy;
+      var title;
+      var meta;
+      var button;
+
+      attempts += 1;
+
+      if (!heading) {
+        if (attempts < 20) {
+          window.setTimeout(place, 300);
+        }
+        return;
+      }
+
+      root = document.createElement("section");
+      root.id = "namaa-account-test";
+      root.className = "namaa-account";
+      root.appendChild(document.createElement("h2")).textContent = "اشتراكاتك";
+      root.appendChild(document.createElement("p")).textContent = "تجربة مؤقتة. الإلغاء يوقف التجديد القادم. الطلب المدفوع يبقى. لا يمكن التراجع.";
+      row = document.createElement("div");
+      row.className = "namaa-account__row";
+      copy = document.createElement("div");
+      title = document.createElement("strong");
+      meta = document.createElement("span");
+      button = document.createElement("button");
+      title.textContent = "كل شهر";
+      meta.textContent = "65.00 ر.س · نشط";
+      copy.appendChild(title);
+      copy.appendChild(meta);
+      button.type = "button";
+      button.className = "namaa-account__cancel";
+      button.textContent = "إلغاء الاشتراك";
+      button.addEventListener("click", function () {
+        if (button.getAttribute("data-confirm") !== "1") {
+          button.setAttribute("data-confirm", "1");
+          button.textContent = "تأكيد الإلغاء";
+          return;
+        }
+
+        meta.textContent = "65.00 ر.س · ملغى";
+        button.remove();
+      });
+      row.appendChild(copy);
+      row.appendChild(button);
+      root.appendChild(row);
+      heading.parentNode.insertBefore(root, heading);
+    }
+
+    place();
+  }
+
+  function accountHeading() {
+    var headings = document.querySelectorAll("h1, h2");
+    var i;
+    var text;
+
+    for (i = 0; i < headings.length; i++) {
+      text = (headings[i].textContent || "").replace(/\s+/g, " ").trim();
+
+      if (text === "الطلبات" || text === "حسابي") {
+        return headings[i];
+      }
+    }
+
+    return null;
   }
 
   function isAccountPage() {
