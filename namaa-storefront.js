@@ -1848,8 +1848,8 @@
     bindProductFormWatch();
     bindCartPageWatch();
     fetchStorefrontConfig(storeId, currentProductId());
-    renderAccountSubscriptions(storeId);
     mountAccountTest();
+    renderAccountSubscriptions(storeId);
   }
 
   // TEMP_ACCOUNT_TEST — delete later. Sample card so an account with no subscription can see the block.
@@ -1916,15 +1916,33 @@
   }
 
   function accountHeading() {
-    var headings = document.querySelectorAll("h1, h2");
+    var nodes = document.querySelectorAll("h1, h2, h3");
     var i;
+    var node;
     var text;
 
-    for (i = 0; i < headings.length; i++) {
-      text = (headings[i].textContent || "").replace(/\s+/g, " ").trim();
+    for (i = 0; i < nodes.length; i += 1) {
+      node = nodes[i];
+      text = (node.textContent || "").replace(/\s+/g, " ").trim();
+
+      if ((text === "الطلبات" || text === "حسابي") && !node.closest("header, nav, a")) {
+        return node;
+      }
+    }
+
+    nodes = document.querySelectorAll("p, span, div");
+
+    for (i = 0; i < nodes.length; i += 1) {
+      node = nodes[i];
+
+      if (node.children.length || node.closest("header, nav, a")) {
+        continue;
+      }
+
+      text = (node.textContent || "").replace(/\s+/g, " ").trim();
 
       if (text === "الطلبات" || text === "حسابي") {
-        return headings[i];
+        return node;
       }
     }
 
@@ -2010,7 +2028,7 @@
       return;
     }
 
-    fetch(apiBase() + "/api/storefront/subscriptions?store_id=" + encodeURIComponent(storeId) + "&t=" + Date.now(), {
+    fetch(apiOrigin() + "/api/storefront/subscriptions?store_id=" + encodeURIComponent(storeId) + "&t=" + Date.now(), {
       headers: {
         Accept: "application/json",
         "X-Salla-Customer-Token": token,
@@ -2072,7 +2090,7 @@
       }
 
       button.disabled = true;
-      fetch(apiBase() + "/api/storefront/subscriptions/" + encodeURIComponent(item.id) + "/cancel", {
+      fetch(apiOrigin() + "/api/storefront/subscriptions/" + encodeURIComponent(item.id) + "/cancel", {
         method: "POST",
         headers: {
           Accept: "application/json",
